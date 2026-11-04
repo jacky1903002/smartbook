@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>企業智能書櫃系統 - Smart Bookshelf</title>
+  <title>企業智能書櫃系統 - Smart Bookshelf Enterprise</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,13 +15,28 @@
   <!-- Babel for Browser JSX Compiling -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- html2canvas & jspdf for PNG & PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  <!-- Firebase App & Database (Compat SDKs for single-file CDN usage) -->
+  <!-- Firebase App, Auth & Database (Compat SDKs for single-file CDN usage) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+  <style>
+    /* Custom 3D Book Shelf Styling */
+    .book-spine-3d {
+      box-shadow: 
+        -4px 0 8px rgba(0,0,0,0.3),
+        2px 2px 10px rgba(0,0,0,0.2),
+        inset 4px 0 6px rgba(255,255,255,0.2);
+    }
+    .shelf-wood {
+      background: linear-[#EFE6D5];
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.15), 0 10px 25px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body class="bg-[#FDFBF7] text-slate-800 font-sans antialiased">
 
@@ -29,7 +44,7 @@
 
   <!-- React App Code compiled by Babel -->
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
 
     // --- YOUR FIREBASE CONFIGURATION ---
     const firebaseConfig = {
@@ -43,7 +58,6 @@
       databaseURL: "https://smartbook-51ff5-default-rtdb.firebaseio.com"
     };
 
-    // Initialize Firebase
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
@@ -64,8 +78,10 @@
         dueDate: '2026-11-15',
         progress: 72,
         coverColor: 'from-amber-700 to-amber-900',
-        synopsis: '每天進步1%，1年後你會強大37倍！本書解構習慣形成的四重科學架構。',
-        chapters: ['第一章：原子習慣的驚人力量', '第二章：你的習慣如何塑造你的身份', '第三章：四個簡單步驟建立好習慣']
+        viewsCount: 245,
+        rating: 4.9,
+        synopsis: '每天進步 1%，1 年後你會強大 37 倍；每天退步 1%，1 年後你會弱化到趨近於 0！本書解構習慣形成的四重科學架構。',
+        chapters: ['第一章：原子習慣的驚人力量', '第二章：你的習慣如何塑造你的身份', '第三章：四個簡單步驟建立好習慣', '第四章：讓提示顯而易見']
       },
       {
         id: 'book-002',
@@ -79,12 +95,14 @@
         dueDate: '2027-09-01',
         progress: 45,
         coverColor: 'from-blue-700 to-slate-900',
-        synopsis: '即便是平庸的程式碼也能正常運作。但如果程式碼不乾淨，它會讓整個軟體開發團隊陷入泥沼。',
-        chapters: ['第 1 章：無瑕的程式碼', '第 2 章：有意義的命名', '第 3 章：函式設計哲學']
+        viewsCount: 312,
+        rating: 4.8,
+        synopsis: '即便是平庸的程式碼也能正常運作。但如果程式碼不乾淨，它會讓整個軟體開發團隊陷入泥沼與癱瘓。',
+        chapters: ['第 1 章：無瑕的程式碼', '第 2 章：有意義的命名', '第 3 章：函式設計哲學', '第 4 章：註解的藝術']
       },
       {
         id: 'book-003',
-        title: '被討厭的勇氣：阿德勒心理學',
+        title: '被討厭的勇氣：阿德勒心理学',
         author: '岸見一郎, 古賀史健',
         publisher: '究竟出版',
         platform: 'HyRead',
@@ -94,8 +112,10 @@
         dueDate: '2026-09-10',
         progress: 90,
         coverColor: 'from-teal-700 to-slate-950',
-        synopsis: '所謂的自由，就是被別人討厭。世界無比單純，誰都能獲得幸福。人並非被過去的原因控制。',
-        chapters: ['第一夜：否定心理創傷', '第二夜：所有煩惱都是人際關係的煩惱']
+        viewsCount: 189,
+        rating: 4.7,
+        synopsis: '所謂的自由，就是被別人討厭。世界無比單純，誰都能獲得幸福。人並非被過去的原因控制，而是朝向目的行動。',
+        chapters: ['第一夜：否定心理創傷', '第二夜：所有煩惱都是人際關係的煩惱', '第三夜：割捨別人的課題']
       },
       {
         id: 'book-004',
@@ -109,36 +129,70 @@
         dueDate: '2027-10-20',
         progress: 88,
         coverColor: 'from-amber-600 to-yellow-900',
+        viewsCount: 420,
+        rating: 4.9,
         synopsis: '理財不是一門硬科學，而是一門心理學。錢、風險與時間，決定了你最終的財務財富與心靈自由。',
-        chapters: ['第一章：沒有人是瘋子', '第二章：運氣與風險的賽局']
+        chapters: ['第一章：沒有人是瘋子', '第二章：運氣與風險的賽局', '第三章：懂得夠了就好']
+      },
+      {
+        id: 'book-005',
+        title: '快思慢想 (Thinking, Fast and Slow)',
+        author: '康納曼',
+        publisher: '天下文化',
+        platform: 'HyRead',
+        category: '商業理財',
+        status: 'expired',
+        borrowDate: '2026-07-01',
+        dueDate: '2026-08-01',
+        progress: 35,
+        coverColor: 'from-rose-800 to-slate-900',
+        viewsCount: 156,
+        rating: 4.6,
+        synopsis: '諾貝爾經濟學獎得主卡尼曼的巨作，剖析大腦的兩種思考模式：直覺的系統 1 與邏輯深思的系統 2。',
+        chapters: ['第一部：兩套系統', '第二部：啟發法與偏見']
       }
     ];
 
     function App() {
+      // --- AUTH STATES ---
       const [user, setUser] = useState(null);
       const [email, setEmail] = useState('');
       const [password, setPassword] = useState('');
       const [isSignUp, setIsSignUp] = useState(false);
       const [authError, setAuthError] = useState('');
+      const [authLoading, setAuthLoading] = useState(false);
 
+      // --- APP DATA STATES ---
       const [books, setBooks] = useState(INITIAL_BOOKS);
       const [isConnected, setIsConnected] = useState(true);
-      const [activeTab, setActiveTab] = useState('shelf');
+      const [lastSaved, setLastSaved] = useState(null);
+      const [activeTab, setActiveTab] = useState('shelf'); // 'shelf' | 'catalog' | 'analytics' | 'exhibition'
+
+      // --- FILTER STATES ---
       const [searchQuery, setSearchQuery] = useState('');
       const [platformFilter, setPlatformFilter] = useState('All');
       const [statusFilter, setStatusFilter] = useState('All');
 
+      // --- PLATFORM CREDENTIALS STORAGE ---
       const [platformAccounts, setPlatformAccounts] = useState({
-        hyreadUser: 'user_hyread_demo',
+        hyreadUser: 'enterprise_hyread_vip',
         hyreadPass: '••••••••',
-        momoUser: 'momo_vip_member',
-        momoPass: '••••••••'
+        momoUser: 'momo_enterprise_member',
+        momoPass: '••••••••',
+        autoLogin: true
       });
       const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+
+      // --- MODAL & INTERACTIVE STATES ---
       const [selectedBook, setSelectedBook] = useState(null);
       const [isReaderOpen, setIsReaderOpen] = useState(false);
+      const [kioskBook, setKioskBook] = useState(INITIAL_BOOKS[0]);
+      const [readerFontSize, setReaderFontSize] = useState(18);
+      const [readerTheme, setReaderTheme] = useState('light'); // 'light' | 'sepia' | 'dark'
 
-      // Auth Listener
+      const containerRef = useRef(null);
+
+      // Auth State Listener
       useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
           setUser(currentUser);
@@ -146,51 +200,108 @@
         return () => unsubscribe();
       }, []);
 
-      // Realtime DB Sync
+      // Realtime DB Listener & Auto Sync
       useEffect(() => {
         if (!user) return;
-        const booksRef = db.ref(`users/${user.uid}/books`);
-        booksRef.on('value', (snapshot) => {
+        const userBooksRef = db.ref(`users/${user.uid}/books`);
+        const userAccountsRef = db.ref(`users/${user.uid}/platformAccounts`);
+
+        userBooksRef.on('value', (snapshot) => {
           const data = snapshot.val();
           if (data) {
             setBooks(Array.isArray(data) ? data : Object.values(data));
           } else {
-            booksRef.set(INITIAL_BOOKS);
+            userBooksRef.set(INITIAL_BOOKS);
           }
           setIsConnected(true);
-        }, (err) => {
-          setIsConnected(false);
+          setLastSaved(new Date());
+        }, () => setIsConnected(false));
+
+        userAccountsRef.on('value', (snapshot) => {
+          const data = snapshot.val();
+          if (data) setPlatformAccounts(data);
         });
-        return () => booksRef.off();
+
+        return () => {
+          userBooksRef.off();
+          userAccountsRef.off();
+        };
       }, [user]);
 
-      const handleAuth = (e) => {
+      // Save Data Helper
+      const saveBooksToFirebase = (newBooks) => {
+        setBooks(newBooks);
+        setLastSaved(new Date());
+        if (user) {
+          db.ref(`users/${user.uid}/books`).set(newBooks);
+        }
+      };
+
+      const handleAuth = async (e) => {
         e.preventDefault();
         setAuthError('');
-        if (isSignUp) {
-          auth.createUserWithEmailAndPassword(email, password)
-            .catch(err => setAuthError(err.message));
-        } else {
-          auth.signInWithEmailAndPassword(email, password)
-            .catch(err => setAuthError(err.message));
+        setAuthLoading(true);
+        try {
+          if (isSignUp) {
+            await auth.createUserWithEmailAndPassword(email, password);
+          } else {
+            await auth.signInWithEmailAndPassword(email, password);
+          }
+        } catch (err) {
+          setAuthError(err.message);
+        } finally {
+          setAuthLoading(false);
         }
+      };
+
+      const handleDemoLogin = () => {
+        setEmail('demo@smartbook.com');
+        setPassword('demo123456');
+        auth.signInWithEmailAndPassword('demo@smartbook.com', 'demo123456').catch(() => {
+          auth.createUserWithEmailAndPassword('demo@smartbook.com', 'demo123456');
+        });
       };
 
       const handleLogout = () => auth.signOut();
 
+      // --- EXPORT FUNCTIONS ---
       const exportToExcel = () => {
-        let csv = '\uFEFFID,書名,作者,平台,狀態,進度%\n';
+        let csv = '\uFEFFID,書名,作者,出版社,平台,分類,狀態,借閱日,到期日,進度%\n';
         books.forEach(b => {
-          csv += `"${b.id}","${b.title}","${b.author}","${b.platform}","${b.status}",${b.progress}\n`;
+          csv += `"${b.id}","${b.title}","${b.author}","${b.publisher}","${b.platform}","${b.category}","${b.status}","${b.borrowDate}","${b.dueDate}",${b.progress}\n`;
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `SmartBookshelf_Export.csv`;
+        a.download = `SmartBookshelf_Report_${new Date().toISOString().slice(0,10)}.csv`;
         a.click();
       };
 
+      const exportToPNG = () => {
+        if (!containerRef.current) return;
+        html2canvas(containerRef.current).then(canvas => {
+          const link = document.createElement('a');
+          link.download = `SmartBookshelf_Snapshot.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        });
+      };
+
+      const exportToPDF = () => {
+        if (!containerRef.current) return;
+        html2canvas(containerRef.current).then(canvas => {
+          const imgData = canvas.toDataURL('image/png');
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgWidth = 210;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          pdf.save(`SmartBookshelf_Report.pdf`);
+        });
+      };
+
+      // Filtered Books Memo
       const filteredBooks = useMemo(() => {
         return books.filter(b => {
           const matchSearch = b.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -201,129 +312,359 @@
         });
       }, [books, searchQuery, platformFilter, statusFilter]);
 
+      // Category Stats Memo
+      const categoryStats = useMemo(() => {
+        const stats = {};
+        books.forEach(b => {
+          stats[b.category] = (stats[b.category] || 0) + 1;
+        });
+        return stats;
+      }, [books]);
+
+      // --- LOGIN SCREEN ---
       if (!user) {
         return (
-          <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-amber-100 p-8 text-center">
-              <h1 className="text-2xl font-bold text-slate-900 mb-2">企業智能書櫃系統</h1>
-              <p className="text-xs text-slate-500 mb-6">Smart Bookshelf Enterprise Login</p>
-              
-              {authError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-xs">{authError}</div>}
+          <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-amber-100 p-8 text-center relative overflow-hidden">
+              <div className="w-16 h-16 rounded-2xl bg-amber-900 text-amber-50 mx-auto flex items-center justify-center shadow-lg mb-4 text-2xl font-bold">
+                📚
+              </div>
+              <h1 className="text-2xl font-extrabold text-slate-900">企業智能書櫃系統</h1>
+              <p className="text-xs text-slate-500 mt-1 mb-6">Smart Bookshelf Enterprise Portal</p>
+
+              {authError && (
+                <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs text-left">
+                  {authError}
+                </div>
+              )}
 
               <form onSubmit={handleAuth} className="space-y-4 text-left">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Firebase 電子郵件</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Firebase 電子郵件</label>
                   <input 
                     type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                    placeholder="name@company.com" 
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-800"
+                    placeholder="manager@company.com" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">密碼</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">密碼</label>
                   <input 
                     type="password" required value={password} onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••" 
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-800"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-800"
                   />
                 </div>
-                <button type="submit" className="w-full py-2.5 bg-amber-900 hover:bg-amber-950 text-white font-medium rounded-xl text-sm transition">
-                  {isSignUp ? '註冊並登入' : '登入智能書櫃'}
+
+                <button type="submit" disabled={authLoading} className="w-full py-3 bg-amber-900 hover:bg-amber-950 text-white font-bold rounded-xl text-sm transition shadow-md">
+                  {isSignUp ? '註冊帳號並登入' : '登入智能書櫃'}
                 </button>
               </form>
 
-              <button onClick={() => setIsSignUp(!isSignUp)} className="mt-4 text-xs text-amber-800 underline">
-                {isSignUp ? '已有帳號？返回登入' : '沒有帳號？點此註冊'}
-              </button>
+              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
+                <button onClick={() => setIsSignUp(!isSignUp)} className="text-amber-800 font-semibold hover:underline">
+                  {isSignUp ? '已有帳號？返回登入' : '註冊新 Firebase 帳號'}
+                </button>
+                <button onClick={handleDemoLogin} className="px-3 py-1 bg-amber-100 text-amber-900 rounded-lg font-bold hover:bg-amber-200 transition">
+                  ⚡ 快速 Demo 登入
+                </button>
+              </div>
             </div>
           </div>
         );
       }
 
+      // --- MAIN APPLICATION SCREEN ---
       return (
-        <div className="min-h-screen flex flex-col">
-          {/* Header */}
-          <header className="bg-white border-b border-amber-200 sticky top-0 z-30 px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-lg font-bold text-slate-900">企業智能書櫃系統</h1>
-              <span className={`text-xs px-2 py-0.5 rounded ${isConnected ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
-                {isConnected ? '● Firebase 連線正常' : '● 連線中斷'}
-              </span>
+        <div ref={containerRef} className="min-h-screen bg-[#FDFBF7] flex flex-col">
+          {/* Header & Connection Status Bar */}
+          <header className="bg-white border-b border-amber-200 sticky top-0 z-30 px-6 py-3 shadow-sm">
+            <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-900 text-amber-50 flex items-center justify-center font-bold text-lg shadow">
+                  📚
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-slate-900 leading-tight">企業智能書櫃系統</h1>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                    <span className={`inline-flex items-center gap-1 font-bold ${isConnected ? 'text-emerald-700' : 'text-red-600'}`}>
+                      <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                      {isConnected ? 'Firebase 即時連線中' : '連線中斷'}
+                    </span>
+                    <span>•</span>
+                    <span>上次儲存: {lastSaved ? lastSaved.toLocaleTimeString() : '已同步'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons & Credentials Storage Manager */}
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setIsAccountModalOpen(true)} 
+                  className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                >
+                  🔐 HyRead / momobook 憑證記憶
+                </button>
+                <div className="text-right hidden sm:block text-xs">
+                  <div className="font-bold text-slate-800">{user.email}</div>
+                  <div className="text-[10px] text-emerald-600 font-semibold">授權連線中</div>
+                </div>
+                <button onClick={handleLogout} className="px-3 py-1.5 bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-700 rounded-xl text-xs font-bold transition">
+                  登出
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => setIsAccountModalOpen(true)} className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-medium">
-                HyRead / momobook 帳號管理
-              </button>
-              <span className="text-xs text-slate-600">{user.email}</span>
-              <button onClick={handleLogout} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs">登出</button>
+
+            {/* Navigation Tabs */}
+            <div className="max-w-7xl mx-auto flex gap-3 mt-3 border-t border-slate-100 pt-2 text-sm font-semibold">
+              {[
+                { id: 'shelf', label: '擬真 3D 書櫃', icon: '🏛️' },
+                { id: 'catalog', label: '電子書目錄', icon: '📋' },
+                { id: 'analytics', label: '閱讀數據統計', icon: '📊' },
+                { id: 'exhibition', label: '拿起即展示 (Kiosk 展覽)', icon: '✨' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 rounded-xl transition flex items-center gap-1.5 ${
+                    activeTab === tab.id ? 'bg-amber-900 text-white shadow-md' : 'text-slate-600 hover:bg-amber-50'
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </header>
 
-          {/* Sub Navigation */}
-          <div className="bg-white border-b border-slate-100 px-6 flex gap-4 text-sm font-medium">
-            {['shelf', 'catalog', 'analytics', 'exhibition'].map(tab => (
-              <button 
-                key={tab} 
-                onClick={() => setActiveTab(tab)}
-                className={`py-3 border-b-2 capitalize ${activeTab === tab ? 'border-amber-900 text-amber-900 font-bold' : 'border-transparent text-slate-500'}`}
-              >
-                {tab === 'shelf' ? '擬真 3D 書櫃' : tab === 'catalog' ? '電子書目錄' : tab === 'analytics' ? '閱讀統計' : '展覽 Kiosk 模式'}
-              </button>
-            ))}
-          </div>
-
-          {/* Main Content Area */}
+          {/* Main Content Body */}
           <main className="flex-1 max-w-7xl w-full mx-auto p-6">
+            
+            {/* ================= TAB 1: 擬真 3D 書櫃 ================= */}
             {activeTab === 'shelf' && (
               <div className="space-y-6">
-                {/* Search Toolbar */}
+                {/* Search & Filter Bar */}
                 <div className="bg-white p-4 rounded-2xl border border-amber-200 shadow-sm flex flex-wrap justify-between items-center gap-4">
-                  <div className="flex gap-3 items-center flex-1">
+                  <div className="flex flex-wrap items-center gap-3 flex-1">
                     <input 
                       type="text" 
-                      value={searchQuery} 
+                      value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      placeholder="搜尋書名或作者..." 
-                      className="px-4 py-1.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-800"
+                      placeholder="搜尋書名、作者或關鍵字..."
+                      className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-800 min-w-[220px]"
                     />
-                    <div className="flex bg-slate-100 p-1 rounded-xl text-xs">
+
+                    {/* Platform Filter */}
+                    <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
                       {['All', 'HyRead', 'momobook'].map(p => (
-                        <button key={p} onClick={() => setPlatformFilter(p)} className={`px-3 py-1 rounded-lg ${platformFilter === p ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}>{p}</button>
+                        <button 
+                          key={p} 
+                          onClick={() => setPlatformFilter(p)}
+                          className={`px-3 py-1.5 rounded-lg transition ${platformFilter === p ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+                        >
+                          {p === 'All' ? '全部平台' : p}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                      {[
+                        { id: 'All', label: '全部狀態' },
+                        { id: 'downloaded', label: '已下載' },
+                        { id: 'expired', label: '逾期' }
+                      ].map(s => (
+                        <button 
+                          key={s.id} 
+                          onClick={() => setStatusFilter(s.id)}
+                          className={`px-3 py-1.5 rounded-lg transition ${statusFilter === s.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+                        >
+                          {s.label}
+                        </button>
                       ))}
                     </div>
                   </div>
-                  <button onClick={exportToExcel} className="px-3 py-2 bg-emerald-700 text-white rounded-xl text-xs font-medium hover:bg-emerald-800">
-                    匯出 Excel
+
+                  {/* One-Click Exports */}
+                  <div className="flex items-center gap-2">
+                    <button onClick={exportToExcel} className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1">
+                      📊 匯出 Excel
+                    </button>
+                    <button onClick={exportToPNG} className="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1">
+                      🖼️ PNG 截圖
+                    </button>
+                    <button onClick={exportToPDF} className="px-3 py-2 bg-red-700 hover:bg-red-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1">
+                      📄 PDF 報表
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3D Realistic Wooden Bookshelf */}
+                <div className="bg-[#EFE6D5] p-8 rounded-3xl border-4 border-[#C8B190] shadow-2xl relative overflow-hidden">
+                  <div className="text-xs font-bold text-amber-900/60 uppercase tracking-widest mb-6">
+                    ENTERPRISE SMART WOODEN BOOKSHELF • 擬真 3D 智慧書櫃
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
+                    {filteredBooks.map(book => {
+                      const isExpired = book.status === 'expired';
+                      return (
+                        <div 
+                          key={book.id}
+                          onClick={() => { setSelectedBook(book); setIsReaderOpen(true); }}
+                          className="group relative cursor-pointer flex flex-col items-center"
+                        >
+                          {/* 3D Interactive Book Cover */}
+                          <div className={`w-44 h-60 rounded-r-xl rounded-l-md shadow-2xl bg-gradient-to-br ${book.coverColor} p-4 flex flex-col justify-between text-white transform transition duration-300 group-hover:-translate-y-3 group-hover:rotate-1 group-hover:scale-105 border-l-4 border-black/40 relative overflow-hidden book-spine-3d`}>
+                            
+                            <div className="flex justify-between items-start z-10">
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 font-bold">
+                                {book.platform}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isExpired ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
+                                {isExpired ? '已逾期' : '已下載'}
+                              </span>
+                            </div>
+
+                            <div className="z-10 my-auto">
+                              <h3 className="font-extrabold text-sm leading-snug drop-shadow-md">{book.title}</h3>
+                              <p className="text-[11px] text-white/80 mt-1 truncate">{book.author}</p>
+                            </div>
+
+                            <div className="z-10 pt-2 border-t border-white/20 flex justify-between items-center text-[10px]">
+                              <span>進度: {book.progress}%</span>
+                              <span className="underline font-bold group-hover:text-amber-200">點擊閱讀</span>
+                            </div>
+
+                            {/* Spine shadow overlay */}
+                            <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-black/50 to-transparent pointer-events-none" />
+                          </div>
+
+                          {/* Hover Tooltip */}
+                          <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-xl pointer-events-none z-30 whitespace-nowrap">
+                            {book.title} - 自動登入閱讀
+                          </div>
+
+                          {/* Wood Shelf Bottom Bar */}
+                          <div className="w-full h-3.5 bg-[#A88757] rounded-full shadow-inner mt-3 border-b border-[#7B613D]" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 2: 電子書目錄 (CATALOG) ================= */}
+            {activeTab === 'catalog' && (
+              <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-900 text-lg">全館電子書清單 ({books.length} 本)</h3>
+                  <button onClick={exportToExcel} className="px-3 py-1.5 bg-emerald-700 text-white rounded-xl text-xs font-bold">
+                    匯出 Excel CSV
                   </button>
                 </div>
 
-                {/* Wooden Bookshelf */}
-                <div className="bg-[#EFE6D5] p-8 rounded-3xl border-4 border-[#C8B190] shadow-2xl">
-                  <div className="text-xs font-bold text-amber-900/60 uppercase mb-4">Enterprise Smart Wooden Bookshelf • 擬真智能書櫃</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                    {filteredBooks.map(book => (
-                      <div 
-                        key={book.id}
-                        onClick={() => { setSelectedBook(book); setIsReaderOpen(true); }}
-                        className="group cursor-pointer flex flex-col items-center"
-                      >
-                        <div className={`w-40 h-56 rounded-r-xl rounded-l-md shadow-2xl bg-gradient-to-br ${book.coverColor} p-4 flex flex-col justify-between text-white transform transition duration-300 group-hover:-translate-y-2 border-l-4 border-black/30`}>
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="bg-black/40 px-1.5 py-0.5 rounded">{book.platform}</span>
-                            <span className={`px-1.5 py-0.5 rounded font-bold ${book.status === 'expired' ? 'bg-red-600' : 'bg-emerald-600'}`}>
-                              {book.status === 'expired' ? '逾期' : '已下載'}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-bold">
+                        <th className="p-3">書名與作者</th>
+                        <th className="p-3">平台</th>
+                        <th className="p-3">分類</th>
+                        <th className="p-3">狀態</th>
+                        <th className="p-3">到期日</th>
+                        <th className="p-3">進度</th>
+                        <th className="p-3 text-right">動作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {books.map(b => (
+                        <tr key={b.id} className="hover:bg-amber-50/30 transition">
+                          <td className="p-3 font-bold text-slate-900">{b.title} <span className="block text-xs font-normal text-slate-500">{b.author}</span></td>
+                          <td className="p-3"><span className="px-2 py-0.5 rounded bg-slate-100 text-xs font-mono font-bold">{b.platform}</span></td>
+                          <td className="p-3 text-xs text-slate-600">{b.category}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${b.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                              {b.status === 'expired' ? '逾期' : '已下載'}
                             </span>
+                          </td>
+                          <td className="p-3 text-xs font-mono">{b.dueDate}</td>
+                          <td className="p-3 text-xs font-bold">{b.progress}%</td>
+                          <td className="p-3 text-right">
+                            <button onClick={() => { setSelectedBook(b); setIsReaderOpen(true); }} className="px-3 py-1 bg-amber-900 text-white rounded-lg text-xs font-bold hover:bg-amber-950">
+                              開啓閱讀
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 3: 閱讀數據統計 (ANALYTICS) ================= */}
+            {activeTab === 'analytics' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm">
+                    <div className="text-xs font-bold text-slate-500 uppercase">總收藏圖書</div>
+                    <div className="text-3xl font-extrabold text-slate-900 mt-2">{books.length} <span className="text-sm font-normal text-slate-500">本</span></div>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm">
+                    <div className="text-xs font-bold text-slate-500 uppercase">已下載電子書</div>
+                    <div className="text-3xl font-extrabold text-emerald-700 mt-2">{books.filter(b => b.status === 'downloaded').length} <span className="text-sm font-normal text-slate-500">本</span></div>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm">
+                    <div className="text-xs font-bold text-slate-500 uppercase">逾期未還</div>
+                    <div className="text-3xl font-extrabold text-red-600 mt-2">{books.filter(b => b.status === 'expired').length} <span className="text-sm font-normal text-slate-500">本</span></div>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm">
+                    <div className="text-xs font-bold text-slate-500 uppercase">平均閱讀進度</div>
+                    <div className="text-3xl font-extrabold text-amber-900 mt-2">
+                      {Math.round(books.reduce((acc,b)=>acc+b.progress,0)/books.length)}%
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Category Chart */}
+                  <div className="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                    <h4 className="font-bold text-slate-900 text-base">📊 書籍類型分類佔比</h4>
+                    {Object.entries(categoryStats).map(([cat, count]) => {
+                      const percent = Math.round((count / books.length) * 100);
+                      return (
+                        <div key={cat}>
+                          <div className="flex justify-between text-xs font-bold mb-1">
+                            <span>{cat}</span>
+                            <span>{count} 本 ({percent}%)</span>
                           </div>
-                          <div>
-                            <h3 className="font-bold text-sm leading-snug">{book.title}</h3>
-                            <p className="text-[11px] text-white/80 mt-1">{book.author}</p>
-                          </div>
-                          <div className="text-[10px] border-t border-white/20 pt-2 flex justify-between">
-                            <span>進度 {book.progress}%</span>
-                            <span className="underline">點擊閱讀</span>
+                          <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                            <div className="bg-amber-900 h-full rounded-full" style={{ width: `${percent}%` }} />
                           </div>
                         </div>
-                        <div className="w-full h-3 bg-[#A88757] rounded-full shadow-inner mt-2 border-b border-[#7B613D]" />
+                      );
+                    })}
+                  </div>
+
+                  {/* Leaderboard */}
+                  <div className="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm space-y-4">
+                    <h4 className="font-bold text-slate-900 text-base">🔥 熱門借閱排行榜</h4>
+                    {[...books].sort((a,b) => b.viewsCount - a.viewsCount).map((b, idx) => (
+                      <div key={b.id} className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${idx === 0 ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <div className="font-bold text-xs text-slate-900">{b.title}</div>
+                            <div className="text-[10px] text-slate-500">{b.platform} | 評分 {b.rating}★</div>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded font-mono">
+                          {b.viewsCount} 次點閱
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -331,75 +672,138 @@
               </div>
             )}
 
-            {activeTab === 'catalog' && (
-              <div className="bg-white rounded-2xl border border-amber-200 p-6">
-                <h3 className="font-bold text-slate-900 text-lg mb-4">電子書目錄清單 ({books.length} 本)</h3>
-                <div className="space-y-3">
-                  {books.map(b => (
-                    <div key={b.id} className="p-3 bg-slate-50 rounded-xl flex justify-between items-center">
-                      <div>
-                        <div className="font-bold text-sm text-slate-900">{b.title}</div>
-                        <div className="text-xs text-slate-500">{b.author} | {b.platform}</div>
-                      </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${b.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {b.status === 'expired' ? '逾期' : '已下載'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'analytics' && (
-              <div className="bg-white rounded-2xl border border-amber-200 p-6">
-                <h3 className="font-bold text-slate-900 text-lg mb-2">閱讀統計與數據分析</h3>
-                <p className="text-sm text-slate-600">總藏書量: {books.length} 本 | 平均閱讀進度: {Math.round(books.reduce((acc,b)=>acc+b.progress,0)/books.length)}%</p>
-              </div>
-            )}
-
+            {/* ================= TAB 4: 拿起即展示 (KIOSK EXHIBITION) ================= */}
             {activeTab === 'exhibition' && (
-              <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl">
-                <h2 className="text-2xl font-extrabold mb-2">拿起即展示 Kiosk 模式</h2>
-                <p className="text-sm text-slate-300">適用於展覽與大廳展示。</p>
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-slate-900 to-amber-950 text-white p-8 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
+                  <div className="space-y-4 max-w-xl">
+                    <span className="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-xs font-bold border border-amber-500/30">
+                      ⚡ Kiosk 展覽模式 (拿起即展示)
+                    </span>
+                    <h2 className="text-3xl font-extrabold leading-tight">實體展覽與企業大廳導覽模式</h2>
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                      點擊下方任何書籍，即刻在展台大螢幕呈現高畫質簡介、導讀章節與瀏覽數據。
+                    </p>
+                    <button onClick={() => { setSelectedBook(kioskBook); setIsReaderOpen(true); }} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-xl text-sm transition shadow-lg">
+                      📖 拿起本書並開啟導讀
+                    </button>
+                  </div>
+
+                  {/* Kiosk Display Card */}
+                  <div className={`w-48 h-72 rounded-xl shadow-2xl bg-gradient-to-br ${kioskBook.coverColor} p-6 flex flex-col justify-between border-l-8 border-black/40 transform rotate-2 hover:rotate-0 transition duration-300`}>
+                    <div className="text-[10px] font-mono font-bold bg-black/40 px-2 py-0.5 rounded w-max">
+                      {kioskBook.platform}
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-base leading-snug">{kioskBook.title}</h3>
+                      <p className="text-xs text-white/80 mt-1">{kioskBook.author}</p>
+                    </div>
+                    <div className="text-[10px] text-white/90 border-t border-white/20 pt-2">
+                      熱門瀏覽: {kioskBook.viewsCount} 次
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kiosk Book Selector */}
+                <div className="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm">
+                  <h4 className="font-bold text-slate-900 text-sm mb-4">點擊下方展示書籍進行切換：</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                    {books.map(b => (
+                      <div 
+                        key={b.id} 
+                        onClick={() => setKioskBook(b)}
+                        className={`p-3 rounded-xl border cursor-pointer transition text-center ${kioskBook.id === b.id ? 'border-amber-800 bg-amber-50 shadow-md ring-2 ring-amber-800/20' : 'border-slate-200 hover:border-amber-300'}`}
+                      >
+                        <div className={`w-16 h-24 mx-auto rounded bg-gradient-to-br ${b.coverColor} mb-2 shadow flex items-center justify-center text-white text-[10px] font-bold p-1 text-center`}>
+                          {b.title}
+                        </div>
+                        <div className="font-bold text-xs truncate">{b.title}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </main>
 
-          {/* Account Modal */}
+          {/* ================= MODAL: CREDENTIALS MANAGER ================= */}
           {isAccountModalOpen && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                <h3 className="text-lg font-bold text-slate-900">HyRead / momobook 帳號設定</h3>
-                <p className="text-xs text-slate-500">已自動安全記憶憑證，點擊書籍即可直接自動驗證登入。</p>
-                <button onClick={() => setIsAccountModalOpen(false)} className="w-full py-2 bg-amber-900 text-white rounded-xl text-xs font-medium">
-                  儲存並關閉
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-amber-200">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <h3 className="text-lg font-bold text-slate-900">🔐 HyRead / momobook 憑證管理</h3>
+                  <button onClick={() => setIsAccountModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  輸入平台憑證後，系統將安全自動記憶。當您點擊任何圖書時，即可跳過輸入密碼直接開啟閱讀。
+                </p>
+
+                <div className="space-y-3">
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                    <div className="text-xs font-bold text-amber-900">HyRead 電子書平台帳號</div>
+                    <input type="text" value={platformAccounts.hyreadUser} onChange={e => setPlatformAccounts({...platformAccounts, hyreadUser: e.target.value})} className="w-full px-3 py-1.5 rounded-lg border text-xs bg-white" />
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 space-y-2">
+                    <div className="text-xs font-bold text-blue-900">momobook 電子書平台帳號</div>
+                    <input type="text" value={platformAccounts.momoUser} onChange={e => setPlatformAccounts({...platformAccounts, momoUser: e.target.value})} className="w-full px-3 py-1.5 rounded-lg border text-xs bg-white" />
+                  </div>
+                </div>
+
+                <button onClick={() => {
+                  if (user) db.ref(`users/${user.uid}/platformAccounts`).set(platformAccounts);
+                  setIsAccountModalOpen(false);
+                }} className="w-full py-2.5 bg-amber-900 hover:bg-amber-950 text-white font-bold rounded-xl text-xs shadow transition">
+                  儲存憑證並關閉
                 </button>
               </div>
             </div>
           )}
 
-          {/* Reader Modal */}
+          {/* ================= MODAL: READER SIMULATOR ================= */}
           {isReaderOpen && selectedBook && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col">
-              <div className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center border-b border-slate-800">
-                <div>
-                  <h3 className="font-bold text-base">{selectedBook.title}</h3>
-                  <p className="text-xs text-slate-400">已自動記憶憑證登入 ({selectedBook.platform})</p>
-                </div>
-                <button onClick={() => setIsReaderOpen(false)} className="px-3 py-1 bg-slate-800 text-slate-200 rounded-lg text-xs">關閉閱讀</button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-8 flex justify-center bg-[#FCF9F2] text-slate-900">
-                <div className="max-w-2xl w-full space-y-6">
-                  <div className="border-b pb-4">
-                    <h4 className="font-bold text-amber-900 text-sm mb-1">書籍摘要</h4>
-                    <p className="text-sm text-slate-700 leading-relaxed">{selectedBook.synopsis}</p>
+            <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex flex-col">
+              {/* Top Control Bar */}
+              <div className="bg-slate-900 text-white px-6 py-3 flex justify-between items-center border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <span className="px-2.5 py-1 bg-amber-600 text-white text-xs font-mono font-bold rounded">
+                    {selectedBook.platform} 免密碼直登閱讀
+                  </span>
+                  <div>
+                    <h3 className="font-bold text-base leading-tight">{selectedBook.title}</h3>
+                    <p className="text-xs text-slate-400">作者：{selectedBook.author}</p>
                   </div>
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-amber-900 text-sm">章節試讀</h4>
+                </div>
+
+                <div className="flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1 bg-slate-800 px-3 py-1 rounded-lg">
+                    <span>字號:</span>
+                    <button onClick={() => setReaderFontSize(Math.max(14, readerFontSize - 2))} className="px-1.5 bg-slate-700 rounded">-</button>
+                    <span className="font-mono">{readerFontSize}px</span>
+                    <button onClick={() => setReaderFontSize(Math.min(26, readerFontSize + 2))} className="px-1.5 bg-slate-700 rounded">+</button>
+                  </div>
+
+                  <button onClick={() => setIsReaderOpen(false)} className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold">
+                    ✕ 關閉閱讀器
+                  </button>
+                </div>
+              </div>
+
+              {/* Reader Body Content */}
+              <div className={`flex-1 overflow-y-auto p-8 md:p-16 flex justify-center ${readerTheme === 'light' ? 'bg-[#FCF9F2] text-slate-900' : 'bg-slate-950 text-slate-200'}`}>
+                <div className="max-w-3xl w-full space-y-8">
+                  <div className="border-b border-slate-300 pb-4">
+                    <h4 className="font-bold text-amber-900 text-base mb-2">【導讀與書籍摘要】</h4>
+                    <p className="text-sm leading-relaxed text-slate-700">{selectedBook.synopsis}</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h4 className="font-bold text-amber-900 text-base">【章節內容模擬閱讀】</h4>
                     {selectedBook.chapters?.map((chap, idx) => (
-                      <div key={idx} className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm text-xs leading-relaxed">
-                        <strong className="block text-slate-900 mb-1">{chap}</strong>
-                        此為 {selectedBook.platform} 電子書內容模擬器，已自動透過雲端完成認證並同步閱讀進度。
+                      <div key={idx} className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                        <h5 className="font-bold text-sm text-amber-900">{chap}</h5>
+                        <p className="text-slate-700 leading-relaxed" style={{ fontSize: `${readerFontSize}px` }}>
+                          這是一篇由 {selectedBook.platform} 電子書雲端連線授權載入的章節內容。系統已自動套用您記憶的平台憑證（{selectedBook.platform === 'HyRead' ? platformAccounts.hyreadUser : platformAccounts.momoUser}）並無縫同步個人閱讀進度至 Firebase。
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -407,11 +811,11 @@
               </div>
             </div>
           )}
+
         </div>
       );
     }
 
-    // Render the App component inside #root
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
